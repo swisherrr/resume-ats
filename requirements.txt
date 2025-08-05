@@ -1,20 +1,26 @@
 # FastAPI - Modern, fast web framework for building APIs with Python
-fastapi==0.104.1
+fastapi
 
 # Uvicorn - ASGI server for running FastAPI applications
-uvicorn[standard]==0.24.0
+uvicorn[standard]
 
 # Python-multipart - Required for handling file uploads in FastAPI
-python-multipart==0.0.6
+python-multipart
 
 # PyPDF2 - Library for reading and manipulating PDF files
-PyPDF2==3.0.1
-
-# Python-magic - Library for file type detection (alternative to file extensions)
-python-magic==0.4.27
+PyPDF2
 
 # Pydantic - Data validation using Python type annotations
-pydantic==2.5.0
+pydantic
 
 # Python-dotenv - Library for loading environment variables from .env files
-python-dotenv==1.0.0 
+python-dotenv
+
+# NLTK - Natural Language Processing toolkit
+nltk
+
+# pdfplumber - Better PDF text extraction
+pdfplumber
+
+# python-docx - For Word document processing
+python-docx 
