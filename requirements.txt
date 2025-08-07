@@ -16,6 +16,9 @@ pydantic
 # Python-dotenv - Library for loading environment variables from .env files
 python-dotenv
 
+# Pydantic-settings - For settings management
+pydantic-settings
+
 # NLTK - Natural Language Processing toolkit
 nltk
 
@@ -23,4 +26,22 @@ nltk
 pdfplumber
 
 # python-docx - For Word document processing
-python-docx 
+python-docx
+
+# MongoDB - Document database
+motor
+
+# Redis - Caching and session management
+redis>=4.0.0
+
+# AWS SDK - For S3 and other AWS services
+boto3
+
+# Additional dependencies for proper implementation
+pymongo
+httpx
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Render deployment
+gunicorn 
