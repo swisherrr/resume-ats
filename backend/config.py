@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_database: str = "ats_resume_analyzer"
     
-    # Redis Configuration
-    redis_url: str = "redis://localhost:6379"
+    # Redis Configuration (optional, for backward compatibility)
+    redis_url: Optional[str] = None
     
     # AWS Configuration
     aws_access_key_id: Optional[str] = None

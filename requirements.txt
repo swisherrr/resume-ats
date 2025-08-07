@@ -31,8 +31,8 @@ python-docx
 # MongoDB - Document database
 motor
 
-# Redis - Caching and session management
-redis>=4.0.0
+# Redis - Caching and session management (removed)
+# redis>=4.0.0
 
 # AWS SDK - For S3 and other AWS services
 boto3

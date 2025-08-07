@@ -9,7 +9,7 @@ from typing import List, Dict, Optional, Any
 
 # Import our modules
 from .config import settings
-from .database import connect_to_mongo, close_mongo_connection, connect_to_redis, close_redis_connection, get_database, get_redis
+from .database import connect_to_mongo, close_mongo_connection, get_database
 from .models import ResumeModel, JobPostingModel, SkillsTaxonomyModel, ResumeAnalysisRequest, ResumeAnalysisResponse, JobMatchRequest, JobMatchResponse
 from .services.s3_service import s3_service
 from .services.resume_analyzer import ResumeAnalyzer
@@ -37,17 +37,15 @@ resume_analyzer = None
 async def startup_event():
     """Initialize database connections and services."""
     await connect_to_mongo()
-    await connect_to_redis()
     
     # Initialize resume analyzer
     global resume_analyzer
-    resume_analyzer = ResumeAnalyzer(get_database(), get_redis())
+    resume_analyzer = ResumeAnalyzer(get_database())
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database connections."""
     await close_mongo_connection()
-    await close_redis_connection()
 
 # API Routes
 
@@ -223,16 +221,11 @@ async def health_check():
         db = get_database()
         await db.command("ping")
         
-        # Check Redis connection
-        redis = get_redis()
-        await redis.ping()
-        
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
             "services": {
-                "mongodb": "connected",
-                "redis": "connected"
+                "mongodb": "connected"
             }
         }
     except Exception as e:

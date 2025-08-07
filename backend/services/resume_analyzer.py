@@ -27,9 +27,8 @@ except LookupError:
     nltk.download('wordnet')
 
 class ResumeAnalyzer:
-    def __init__(self, db, redis_client):
+    def __init__(self, db):
         self.db = db
-        self.redis = redis_client
         self.lemmatizer = WordNetLemmatizer()
         
         # Common ATS keywords by category
@@ -204,15 +203,6 @@ class ResumeAnalyzer:
     async def analyze_resume(self, file_content: bytes, filename: str, job_description: str = "") -> Dict[str, Any]:
         """Analyze resume and return comprehensive results."""
         
-        # Generate cache key
-        content_hash = hashlib.md5(file_content).hexdigest()
-        cache_key = f"resume:analysis:{content_hash}"
-        
-        # Check Redis cache first
-        cached_result = await self.redis.get(cache_key)
-        if cached_result:
-            return json.loads(cached_result)
-        
         # Extract text based on file type
         if filename.lower().endswith('.pdf'):
             text = self.extract_text_from_pdf(file_content)
@@ -258,9 +248,6 @@ class ResumeAnalyzer:
             "missing_keywords": missing_keywords,
             "analyzed_at": datetime.utcnow().isoformat()
         }
-        
-        # Cache result in Redis
-        await self.redis.setex(cache_key, 3600, json.dumps(result))  # Cache for 1 hour
         
         return result
 

@@ -17,18 +17,18 @@ services:
     networks:
       - ats_network
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: ats_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    networks:
-      - ats_network
+  # Redis Cache (removed)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: ats_redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   command: redis-server --appendonly yes
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - ats_network
 
   # FastAPI Application
   api:
@@ -41,14 +41,12 @@ services:
       - "8000:8000"
     environment:
       - MONGODB_URL=mongodb://admin:password123@mongodb:27017/
-      - REDIS_URL=redis://redis:6379
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ats-resume-uploads}
     depends_on:
       - mongodb
-      - redis
     networks:
       - ats_network
     volumes:
@@ -56,7 +54,6 @@ services:
 
 volumes:
   mongodb_data:
-  redis_data:
 
 networks:
   ats_network:
