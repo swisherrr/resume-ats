@@ -36,11 +36,21 @@ resume_analyzer = None
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connections and services."""
-    await connect_to_mongo()
+    try:
+        await connect_to_mongo()
+        print("MongoDB connection established successfully")
+    except Exception as e:
+        print(f"Warning: MongoDB connection failed: {e}")
+        print("Continuing without database functionality...")
     
     # Initialize resume analyzer
     global resume_analyzer
-    resume_analyzer = ResumeAnalyzer(get_database())
+    try:
+        resume_analyzer = ResumeAnalyzer(get_database())
+        print("Resume analyzer initialized successfully")
+    except Exception as e:
+        print(f"Error initializing resume analyzer: {e}")
+        resume_analyzer = None
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -48,6 +58,21 @@ async def shutdown_event():
     await close_mongo_connection()
 
 # API Routes
+
+@app.post(f"{settings.api_v1_prefix}/test-upload")
+async def test_upload(
+    file: UploadFile = File(...),
+    job_description: str = Form(""),
+    user_id: str = Form("default_user")
+):
+    """Test endpoint to debug upload issues."""
+    return {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size": len(await file.read()),
+        "job_description": job_description,
+        "user_id": user_id
+    }
 
 @app.post(f"{settings.api_v1_prefix}/resume/analyze", response_model=ResumeAnalysisResponse)
 async def analyze_resume_ats(
@@ -63,17 +88,26 @@ async def analyze_resume_ats(
     improvement suggestions.
     """
     try:
+        # Check if resume analyzer is initialized
+        if resume_analyzer is None:
+            raise HTTPException(status_code=500, detail="Resume analyzer not initialized")
+        
         # Validate file type
         if not file.filename.lower().endswith(('.pdf', '.docx')):
             raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
         
+        print(f"Processing file: {file.filename}")
+        
         # Upload file to S3
         s3_key = await s3_service.upload_file(file)
+        print(f"File uploaded to: {s3_key}")
         
         # Get file content for analysis
         file_content = await s3_service.get_file_content(s3_key)
         if not file_content:
             raise HTTPException(status_code=500, detail="Failed to retrieve file content")
+        
+        print(f"File content retrieved, size: {len(file_content)} bytes")
         
         # Analyze resume
         analysis_result = await resume_analyzer.analyze_resume(
@@ -82,21 +116,28 @@ async def analyze_resume_ats(
             job_description
         )
         
-        # Store in MongoDB
-        resume_data = ResumeModel(
-            user_id=user_id,
-            filename=file.filename,
-            s3_key=s3_key,
-            parsed_content=analysis_result,
-            analysis_results=analysis_result
-        )
+        print("Resume analysis completed successfully")
         
-        db = get_database()
-        result = await db.resumes.insert_one(resume_data.dict(by_alias=True))
+        # Store in MongoDB (optional, continue even if it fails)
+        try:
+            resume_data = ResumeModel(
+                user_id=user_id,
+                filename=file.filename,
+                s3_key=s3_key,
+                parsed_content=analysis_result,
+                analysis_results=analysis_result
+            )
+            
+            db = get_database()
+            result = await db.resumes.insert_one(resume_data.dict(by_alias=True))
+            file_id = str(result.inserted_id)
+        except Exception as db_error:
+            print(f"Database storage failed: {db_error}")
+            file_id = "temp_" + str(uuid.uuid4())
         
         # Prepare response
         response = ResumeAnalysisResponse(
-            file_id=str(result.inserted_id),
+            file_id=file_id,
             extracted_text=analysis_result["extracted_text"],
             keywords=analysis_result["keywords"],
             skills=analysis_result["skills"],
@@ -110,8 +151,11 @@ async def analyze_resume_ats(
         
         return response
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in analyze_resume_ats: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post(f"{settings.api_v1_prefix}/job/match", response_model=JobMatchResponse)
 async def match_resume_to_job(request: JobMatchRequest):
